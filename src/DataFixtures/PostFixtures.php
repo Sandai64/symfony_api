@@ -20,7 +20,7 @@ class PostFixtures extends Fixture
             
             // We can chain object setters like so
             $post->setTitle($faker->sentence())
-                 ->setContent($faker->paragraphs(8), true)
+                 ->setContent($faker->paragraphs(8, true))
                  ->setCreatedAt($faker->dateTimeBetween('-6 months'));
 
             $manager->persist($post);
