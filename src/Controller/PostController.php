@@ -61,7 +61,7 @@ class PostController extends AbstractController
     /**
      * @Route("/api/post/create", name="api_post_new_post", methods="POST")
      */
-    public function create_post(Request $request, EntityManagerInterface $entity_manager) : Response
+    public function create_post(Request $request) : Response
     {
         // Fetch the request's body
         try
@@ -69,8 +69,8 @@ class PostController extends AbstractController
             $post_object = $this->serializer->deserialize($request->getContent(), Post::class, 'json');
             $post_object->setCreatedAt(new DateTime());
 
-            $entity_manager->persist($post_object);
-            $entity_manager->flush();
+            $this->entity_manager->persist($post_object);
+            $this->entity_manager->flush();
 
             return new Response($this->serializer->serialize($post_object, 'json'), Response::HTTP_CREATED);
         }
