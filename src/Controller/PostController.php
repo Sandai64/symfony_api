@@ -99,4 +99,29 @@ class PostController extends AbstractController
             return new Response($error, Response::HTTP_NOT_FOUND, ['Content-Type' => 'application/json']);
         }
     }
+
+    /**
+     * @Route("/api/post/update/{post_id}", name="api_post_update_post", methods="PUT")
+     */
+    public function update_post(Request $request, int $post_id)
+    {
+        try
+        {
+            $post_json = $request->getContent();
+            $post_object = $this->post_repo->find($post_id);
+
+            if ($post_object === null)
+            {
+                throw new Exception();
+            }
+
+            $this->serializer->deserialize($post_json, Post::class, 'json', ['object_to_populate' => $post_object]);
+            $this->entity_manager->flush();
+        }
+        catch (\Throwable $th)
+        {
+            $error = $this->serializer->serialize(['error' => 'Post ID not found'], 'json');
+            return new Response($error, Response::HTTP_NOT_FOUND, ['Content-Type' => 'application/json']);
+        }
+    }
 }
