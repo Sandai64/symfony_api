@@ -117,6 +117,9 @@ class PostController extends AbstractController
 
             $this->serializer->deserialize($post_json, Post::class, 'json', ['object_to_populate' => $post_object]);
             $this->entity_manager->flush();
+
+            $updated_post_json = $this->serializer->serialize($post_object, 'json');
+            return new Response($updated_post_json, Response::HTTP_OK, ['Content-Type' => 'application/json']);
         }
         catch (\Throwable $th)
         {
