@@ -6,23 +6,32 @@ use App\Entity\Post;
 use App\Repository\PostRepository;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
+use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class PostController extends AbstractController
 {
     private $post_repo;
     private $serializer;
     private $entity_manager;
+    private $validator;
 
-    public function __construct(PostRepository $post_repo, SerializerInterface $serializer, EntityManagerInterface $entity_manager)
+    public function __construct(
+        PostRepository $post_repo,
+        SerializerInterface $serializer,
+        EntityManagerInterface $entity_manager,
+        ValidatorInterface $validator
+    )
     {
         $this->post_repo = $post_repo;
         $this->serializer = $serializer;
         $this->entity_manager = $entity_manager;
+        $this->validator = $validator;
     }
 
     /**
@@ -30,8 +39,10 @@ class PostController extends AbstractController
      */
     public function get_all(): Response
     {
-        $all_posts = $this->serializer->serialize($this->post_repo->findAll(), 'json');
-        return new Response($all_posts, Response::HTTP_OK, ['Content-Type' => 'application/json']);
+        $sorted_posts = $this->post_repo->findBy([], ['createdAt' => 'DESC']);
+
+        $posts_json = $this->serializer->serialize($sorted_posts, 'json');
+        return new Response($posts_json, Response::HTTP_OK, ['Content-Type' => 'application/json']);
     }
 
     /**
@@ -67,6 +78,14 @@ class PostController extends AbstractController
         try
         {
             $post_object = $this->serializer->deserialize($request->getContent(), Post::class, 'json');
+            
+            $errors = $this->validator->validate($post_object);
+
+            if ( sizeof($errors) > 0 )
+            {
+                return new Response($this->serializer->serialize($errors, 'json'), Response::HTTP_BAD_REQUEST);
+            }
+
             $post_object->setCreatedAt(new DateTime());
 
             $this->entity_manager->persist($post_object);
@@ -93,7 +112,7 @@ class PostController extends AbstractController
             
             return new Response(null, Response::HTTP_NO_CONTENT);
         }
-        catch (\Throwable $th)
+        catch (Exception $th)
         {
             $error = $this->serializer->serialize(['error' => 'Post ID not found'], 'json');
             return new Response($error, Response::HTTP_NOT_FOUND, ['Content-Type' => 'application/json']);
